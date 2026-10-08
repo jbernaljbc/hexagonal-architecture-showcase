@@ -1,99 +1,98 @@
 # Hexagonal Architecture Showcase (TypeScript)
 
-Proyecto didáctico que demuestra la **Arquitectura Hexagonal** (también
-conocida como *Puertos y Adaptadores*) con un caso de uso sencillo: la gestión
-de tareas (*Todo*).
+An educational project that demonstrates **Hexagonal Architecture** (also
+known as *Ports & Adapters*) through a simple use case: task management
+(Todo).
 
-La idea central es simple: **la lógica de negocio no debe depender de la
-tecnología**. El dominio vive en el centro y todo lo demás (HTTP, CLI, base de
-datos, sistema de ficheros) se conecta a través de **puertos** y **adaptadores**
-intercambiables.
+The core idea is simple: **business logic should not depend on technology**.
+The domain lives at the center, and everything else (HTTP, CLI, database,
+filesystem) connects to it through **ports** and interchangeable **adapters**.
 
 ---
 
-## El hexágono
+## The hexagon
 
 ```
                         ┌───────────────────────────────────────────┐
-                        │              APLICACIÓN                    │
-   ADAPTADORES          │  (casos de uso + puertos)                  │     ADAPTADORES
-   DE ENTRADA           │                                           │     DE SALIDA
+                        │               APPLICATION                  │
+   INPUT                │  (use cases + ports)                       │     OUTPUT
+   ADAPTERS             │                                            │     ADAPTERS
                         │   ┌───────────────────────────────────┐   │
- ┌───────────┐  puerto  │   │            DOMINIO                │   │  puerto   ┌───────────┐
+ ┌───────────┐  input   │   │              DOMAIN               │   │  output   ┌───────────┐
  │   HTTP    │──────────┼──▶│  Task · TaskId · TaskTitle        │◀──┼──────────▶│ In-Memory │
- │  (Express)│  entrada │   │  TaskStatus · reglas de negocio   │   │  salida   │ Repository│
+ │  (Express)│  port    │   │  TaskStatus · business rules      │   │  port     │ Repository│
  └───────────┘          │   └───────────────────────────────────┘   │           └───────────┘
-                        │                                           │
- ┌───────────┐  puerto  │                                           │  puerto   ┌───────────┐
- │   CLI     │──────────┼───────────────────────────────────────────┼──────────▶│   File    │
- │ (terminal)│  entrada │                                           │  salida   │ Repository│
- └───────────┘          └───────────────────────────────────────────┘           └───────────┘
+                        │                                            │
+ ┌───────────┐  input   │                                            │  output   ┌───────────┐
+ │   CLI     │──────────┼────────────────────────────────────────────┼──────────▶│   File    │
+ │ (terminal)│  port    │                                            │  port     │ Repository│
+ └───────────┘          └───────────────────────────────────────────┘            └───────────┘
 ```
 
-- **Dominio** (`src/domain`): entidades y *value objects*. No importa nada externo.
-- **Aplicación** (`src/application`): casos de uso y **puertos** (interfaces).
-- **Infraestructura** (`src/infrastructure`): **adaptadores** que implementan los puertos y el *composition root*.
+- **Domain** (`src/domain`): entities and *value objects*. Imports nothing external.
+- **Application** (`src/application`): use cases and **ports** (interfaces).
+- **Infrastructure** (`src/infrastructure`): **adapters** that implement the ports, plus the *composition root*.
 
-### Regla de dependencia
+### Dependency rule
 
-Las flechas de dependencia **siempre apuntan hacia dentro**:
+Dependencies **always point inward**:
 
 ```
 infrastructure  ──▶  application  ──▶  domain
 ```
 
-El dominio no conoce la aplicación; la aplicación no conoce la infraestructura.
-La inversión se logra mediante interfaces (los puertos).
+The domain knows nothing about the application; the application knows nothing
+about the infrastructure. The inversion is achieved through interfaces (ports).
 
 ---
 
-## Estructura del proyecto
+## Project structure
 
 ```
 src/
-├── domain/                          # Núcleo: sin dependencias
+├── domain/                          # Core: no dependencies
 │   ├── model/
-│   │   ├── Task.ts                  # Entidad raíz con sus invariantes
+│   │   ├── Task.ts                  # Root entity with its invariants
 │   │   ├── TaskId.ts                # Value Object
 │   │   ├── TaskTitle.ts             # Value Object
 │   │   └── TaskStatus.ts
 │   └── errors/
 │       └── DomainError.ts
 │
-├── application/                     # Contratos y orquestación
+├── application/                     # Contracts and orchestration
 │   ├── ports/
-│   │   ├── in/ForManagingTasks.ts   # Puertos de ENTRADA (driving)
-│   │   └── out/ForPersistingTasks.ts# Puerto de SALIDA (driven)
-│   ├── dto/                         # Objetos de salida serializables
+│   │   ├── in/ForManagingTasks.ts   # INPUT ports (driving)
+│   │   └── out/ForPersistingTasks.ts# OUTPUT port (driven)
+│   ├── dto/                         # Serializable output objects
 │   ├── errors/ApplicationError.ts
-│   └── usecases/                    # Implementación de los casos de uso
+│   └── usecases/                    # Use case implementations
 │       ├── CreateTaskUseCase.ts
 │       ├── ListTasksUseCase.ts
 │       ├── GetTaskUseCase.ts
 │       ├── CompleteTaskUseCase.ts
 │       └── DeleteTaskUseCase.ts
 │
-├── infrastructure/                  # Adaptadores (detalles reemplazables)
+├── infrastructure/                  # Adapters (replaceable details)
 │   ├── adapters/
 │   │   ├── in/
-│   │   │   ├── http/                # Adaptador de entrada HTTP
-│   │   │   └── cli/                 # Adaptador de entrada CLI
+│   │   │   ├── http/                # HTTP input adapter
+│   │   │   └── cli/                 # CLI input adapter
 │   │   └── out/
 │   │       ├── InMemoryTaskRepository.ts
 │   │       └── FileTaskRepository.ts
 │   └── config/container.ts          # Composition root
 │
-└── main.ts                          # Selecciona el adaptador de entrada
+└── main.ts                          # Selects the input adapter
 ```
 
 ---
 
-## Requisitos
+## Requirements
 
 - Node.js >= 20
 - npm
 
-## Instalación
+## Installation
 
 ```bash
 npm install
@@ -101,91 +100,91 @@ npm install
 
 ## Scripts
 
-| Script | Descripción |
+| Script | Description |
 |---|---|
-| `npm run dev` | Arranca el adaptador HTTP con recarga automática |
-| `npm start` | Arranca el adaptador HTTP (una vez) |
-| `npm run cli -- <cmd>` | Ejecuta el adaptador CLI |
-| `npm test` | Ejecuta todos los tests |
-| `npm run test:watch` | Tests en modo watch |
-| `npm run test:coverage` | Tests con cobertura |
-| `npm run typecheck` | Comprueba tipos sin emitir |
-| `npm run build` | Compila a `dist/` |
+| `npm run dev` | Starts the HTTP adapter with auto-reload |
+| `npm start` | Starts the HTTP adapter (once) |
+| `npm run cli -- <cmd>` | Runs the CLI adapter |
+| `npm test` | Runs all tests |
+| `npm run test:watch` | Tests in watch mode |
+| `npm run test:coverage` | Tests with coverage |
+| `npm run typecheck` | Type-checks without emitting |
+| `npm run build` | Compiles to `dist/` |
 
 ---
 
-## Uso: adaptador HTTP
+## Usage: HTTP adapter
 
 ```bash
 npm run dev
 ```
 
-| Método | Ruta | Descripción |
+| Method | Route | Description |
 |---|---|---|
-| `GET` | `/health` | Comprobación de salud |
-| `POST` | `/tasks` | Crea una tarea (`{ "title": "..." }`) |
-| `GET` | `/tasks` | Lista tareas |
-| `GET` | `/tasks/:id` | Obtiene una tarea |
-| `POST` | `/tasks/:id/complete` | Marca como completada |
-| `DELETE` | `/tasks/:id` | Elimina una tarea |
+| `GET` | `/health` | Health check |
+| `POST` | `/tasks` | Creates a task (`{ "title": "..." }`) |
+| `GET` | `/tasks` | Lists tasks |
+| `GET` | `/tasks/:id` | Gets a task |
+| `POST` | `/tasks/:id/complete` | Marks a task as completed |
+| `DELETE` | `/tasks/:id` | Deletes a task |
 
-Ejemplo con `curl`:
+Example with `curl`:
 
 ```bash
 curl -s -X POST localhost:3000/tasks \
   -H 'Content-Type: application/json' \
-  -d '{"title":"Aprender arquitectura hexagonal"}'
+  -d '{"title":"Learn hexagonal architecture"}'
 
 curl -s localhost:3000/tasks
 curl -s -X POST localhost:3000/tasks/<id>/complete
 ```
 
-## Uso: adaptador CLI
+## Usage: CLI adapter
 
 ```bash
 npm run cli -- list
-npm run cli -- create "Aprender puertos y adaptadores"
+npm run cli -- create "Learn ports and adapters"
 npm run cli -- get <task-id>
 npm run cli -- complete <task-id>
 npm run cli -- delete <task-id>
 ```
 
-> El CLI y la API HTTP consumen **los mismos casos de uso**. Esa es la prueba
-> de que la lógica de negocio está desacoplada del mecanismo de entrada.
+> The CLI and the HTTP API consume **the same use cases**. That is the proof
+> that the business logic is decoupled from the delivery mechanism.
 
 ---
 
-## Persistencia intercambiable
+## Swappable persistence
 
-El puerto de salida `ForPersistingTasks` tiene dos implementaciones:
+The output port `ForPersistingTasks` has two implementations:
 
-- `InMemoryTaskRepository` (por defecto).
-- `FileTaskRepository` (JSON en disco).
+- `InMemoryTaskRepository` (default).
+- `FileTaskRepository` (JSON on disk).
 
-Elige el adaptador **sin tocar el dominio ni los casos de uso**, mediante la
-variable de entorno `PERSISTENCE`:
+Pick the adapter **without touching the domain or the use cases**, via the
+`PERSISTENCE` environment variable:
 
 ```bash
-# Persistencia en memoria (por defecto)
+# In-memory persistence (default)
 npm run dev
 
-# Persistencia en fichero JSON
+# JSON file persistence
 PERSISTENCE=file npm run dev
 
-# Personaliza la ruta del fichero
+# Customize the file path
 PERSISTENCE=file TASKS_FILE=./data/tasks.json npm run cli -- list
 ```
 
-Todo el cableado ocurre en `src/infrastructure/config/container.ts`
-(el *composition root*).
+All the wiring happens in `src/infrastructure/config/container.ts`
+(the *composition root*).
 
 ---
 
-## Principios demostrados
+## Principles demonstrated
 
-- **Dominio puro**: `Task` no importa Express, `fs` ni nada de infraestructura.
-- **Puertos**: interfaces que definen *qué* se necesita, no *cómo* se hace.
-- **Adaptadores intercambiables**: HTTP/CLI por un lado, memoria/fichero por otro.
-- **Inversión de dependencias**: la infraestructura depende de la aplicación.
-- **Testabilidad**: los casos de uso se prueban con un repositorio in-memory,
-  sin levantar servidores ni bases de datos.
+- **Pure domain**: `Task` imports neither Express, `fs`, nor anything from infrastructure.
+- **Ports**: interfaces that define *what* is needed, not *how* it is done.
+- **Interchangeable adapters**: HTTP/CLI on one side, memory/file on the other.
+- **Dependency inversion**: infrastructure depends on the application.
+- **Testability**: use cases are tested with an in-memory repository,
+  without spinning up servers or databases.
